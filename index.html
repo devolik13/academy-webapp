@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Академия Стихий</title>
+  <title>Город мага</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -14,9 +14,9 @@
     <p><strong>Кристаллы:</strong> <span id="crystals">0</span></p>
 
     <div class="grid" id="city-grid"></div>
-    <button id="build-btn" onclick="document.querySelector('.cell').click()">Построить Коллектор маны (50 кристаллов)</button>
+    <button id="build-btn" onclick="document.querySelector('.cell:not(.built)').click()">Построить Коллектор маны (50 кристаллов)</button>
   </div>
 
-  <script type="module" src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
