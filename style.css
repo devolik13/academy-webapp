@@ -1,0 +1,65 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #1e1e2e;
+  color: #ffffff;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 20px auto;
+  width: fit-content;
+  border: 2px solid #7289da;
+  padding: 4px;
+  background: #2c2c3d;
+}
+
+.cell {
+  width: 50px;
+  height: 50px;
+  background: #3a3a52;
+  border: 1px solid #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cell:hover {
+  background: #505070;
+}
+
+.cell.built {
+  background: #4a752c;
+}
+
+.cell.mana-collector {
+  background: #a35e15;
+}
+
+#build-btn {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  background: #7289da;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#build-btn:disabled {
+  background: #4a4a6a;
+  cursor: not-allowed;
+}
