@@ -13,22 +13,12 @@
     <p><strong>Мана:</strong> <span id="mana">0</span></p>
     <p><strong>Кристаллы:</strong> <span id="crystals">0</span></p>
 
-    <!-- Сетка 7x7 -->
-    <div class="grid" id="city-grid">
-      <!-- Ячейки будут добавлены через JS -->
-    </div>
+    <div class="grid" id="city-grid"></div>
 
-    <!-- Кнопка постройки -->
     <button id="build-btn">Построить Коллектор маны (50 кристаллов)</button>
   </div>
 
-  <!-- Подключаем Supabase -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Инициализируем клиента Supabase -->
-  <script src="supabase.js"></script>
-
-  <!-- Основной скрипт -->
-  <script src="script.js"></script>
+  <!-- Подключаем модуль -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>
