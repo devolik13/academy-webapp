@@ -1,56 +1,48 @@
-// script.js — теперь получает данные через /api/user
+// script.js
 console.log('✅ script.js загружен');
 
-const urlParams = new URLSearchParams(window.location.search);
-const userId = urlParams.get('user_id');
+// Генерируем временный ID для теста (в реальном приложении будет от Telegram)
+const userId = localStorage.getItem('user_id') || Math.random().toString(36).substr(2, 9);
+localStorage.setItem('user_id', userId);
 
-if (!userId) {
-  document.body.innerHTML = '<h2>❌ Ошибка: не указан user_id</h2>';
-  throw new Error('user_id not provided');
+// Инициализация данных
+function initUserData() {
+  const defaultData = {
+    id: userId,
+    username: 'Тестовый_Маг',
+    faction: 'Орден Магов',
+    mana: 0,
+    crystals: 100,
+    energy: 50,
+    buildings: []
+  };
+  
+  const saved = localStorage.getItem(`user_${userId}`);
+  return saved ? JSON.parse(saved) : defaultData;
 }
 
-async function loadUserData() {
-  try {
-    console.log('🔄 Запрашиваем данные через прокси...');
+let userData = initUserData();
 
-    // Запрос через наш API (на Vercel)
-    const response = await fetch(`/api/user?user_id=${userId}`);
-    const userData = await response.json();
-
-    if (response.status === 400) {
-      document.body.innerHTML = '<h2>❌ Ошибка: user_id не передан</h2>';
-      return;
-    }
-
-    if (response.status === 500) {
-      document.body.innerHTML = `<h2>❌ Ошибка сервера: ${userData.error}</h2>`;
-      return;
-    }
-
-    console.log('✅ Данные получены:', userData);
-
-    document.getElementById('faction').textContent = userData.faction;
-    document.getElementById('mana').textContent = userData.mana;
-    document.getElementById('crystals').textContent = userData.crystals;
-
-    const grid = document.getElementById('city-grid');
-    grid.innerHTML = '';
-    for (let i = 0; i < 49; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.dataset.index = i;
-      cell.addEventListener('click', () => onCellClick(cell, userData));
-      grid.appendChild(cell);
-    }
-  } catch (e) {
-    console.error('❌ Ошибка:', e);
-    document.body.innerHTML = `<h2>❌ Ошибка загрузки: ${e.message}</h2>`;
+// Отображение данных
+function updateUI() {
+  document.getElementById('faction').textContent = userData.faction;
+  document.getElementById('mana').textContent = userData.mana;
+  document.getElementById('crystals').textContent = userData.crystals;
+  
+  // Создание сетки
+  const grid = document.getElementById('city-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 49; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.index = i;
+    cell.addEventListener('click', () => onCellClick(cell));
+    grid.appendChild(cell);
   }
 }
 
-loadUserData();
-
-function onCellClick(cell, userData) {
+// Постройка здания
+function onCellClick(cell) {
   if (cell.classList.contains('built')) {
     alert('Здесь уже построено!');
     return;
@@ -62,38 +54,20 @@ function onCellClick(cell, userData) {
   }
 
   if (confirm('Построить Коллектор маны за 50 кристаллов?')) {
-    buildStructure(cell, userData);
-  }
-}
-
-async function buildStructure(cell, userData) {
-  cell.classList.add('built', 'mana-collector');
-  cell.textContent = 'М';
-
-  const newCrystals = userData.crystals - 50;
-  const newMana = userData.mana + 10;
-
-  // Обновляем данные через API
-  const response = await fetch(`/api/user`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      user_id: userData.id,
-      crystals: newCrystals,
-      mana: newMana
-    })
-  });
-
-  const result = await response.json();
-
-  if (response.ok) {
-    document.getElementById('crystals').textContent = newCrystals;
-    document.getElementById('mana').textContent = newMana;
+    cell.classList.add('built', 'mana-collector');
+    cell.textContent = 'М';
+    
+    userData.crystals -= 50;
+    userData.mana += 10;
+    
+    // Сохраняем данные
+    localStorage.setItem(`user_${userData.id}`, JSON.stringify(userData));
+    
+    // Обновляем интерфейс
+    updateUI();
     alert('✅ Здание построено!');
-  } else {
-    alert('❌ Ошибка сохранения!');
-    cell.classList.remove('built', 'mana-collector');
-    cell.textContent = '';
-    console.error(result.error);
   }
 }
+
+// Загрузка и отображение данных
+updateUI();
