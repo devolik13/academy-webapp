@@ -1,24 +1,19 @@
 // script.js
+import { supabase } from './supabase.js';
 
 console.log('✅ script.js загружен');
-console.log('supabase:', supabase); // Проверяем, что Supabase доступен
+console.log('supabase:', supabase);
 
-// Получаем user_id из URL
 const urlParams = new URLSearchParams(window.location.search);
 const userId = urlParams.get('user_id');
-
-console.log('🔍 user_id из URL:', userId);
 
 if (!userId) {
   document.body.innerHTML = '<h2>❌ Ошибка: не указан user_id</h2>';
   throw new Error('user_id not provided');
 }
 
-// Загружаем данные
 async function loadUserData() {
   try {
-    console.log('🔄 Запрашиваем данные из Supabase...');
-
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -32,19 +27,14 @@ async function loadUserData() {
     }
 
     if (!data) {
-      console.warn('⚠️ Игрок не найден в базе');
       document.body.innerHTML = '<h2>⚠️ Игрок не найден. Зарегистрируйся в боте.</h2>';
       return;
     }
 
-    console.log('✅ Данные получены:', data);
-
-    // Обновляем страницу
     document.getElementById('faction').textContent = data.faction;
     document.getElementById('mana').textContent = data.mana;
     document.getElementById('crystals').textContent = data.crystals;
 
-    // Создаём сетку
     const grid = document.getElementById('city-grid');
     grid.innerHTML = '';
     for (let i = 0; i < 49; i++) {
@@ -54,14 +44,12 @@ async function loadUserData() {
       cell.addEventListener('click', () => onCellClick(cell, data));
       grid.appendChild(cell);
     }
-
   } catch (e) {
-    console.error('❌ Ошибка в loadUserData:', e);
+    console.error('❌ Ошибка:', e);
     document.body.innerHTML = `<h2>❌ Ошибка: ${e.message}</h2>`;
   }
 }
 
-// Запускаем
 loadUserData();
 
 function onCellClick(cell, userData) {
