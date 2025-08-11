@@ -1,8 +1,5 @@
-// script.js
-import { supabase } from './supabase.js';
-
+// script.js — теперь получает данные через /api/user
 console.log('✅ script.js загружен');
-console.log('supabase:', supabase);
 
 const urlParams = new URLSearchParams(window.location.search);
 const userId = urlParams.get('user_id');
@@ -14,26 +11,27 @@ if (!userId) {
 
 async function loadUserData() {
   try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', parseInt(userId))
-      .single();
+    console.log('🔄 Запрашиваем данные через прокси...');
 
-    if (error) {
-      console.error('❌ Ошибка Supabase:', error);
-      document.body.innerHTML = `<h2>❌ Ошибка: ${error.message}</h2>`;
+    // Запрос через наш API (на Vercel)
+    const response = await fetch(`/api/user?user_id=${userId}`);
+    const userData = await response.json();
+
+    if (response.status === 400) {
+      document.body.innerHTML = '<h2>❌ Ошибка: user_id не передан</h2>';
       return;
     }
 
-    if (!data) {
-      document.body.innerHTML = '<h2>⚠️ Игрок не найден. Зарегистрируйся в боте.</h2>';
+    if (response.status === 500) {
+      document.body.innerHTML = `<h2>❌ Ошибка сервера: ${userData.error}</h2>`;
       return;
     }
 
-    document.getElementById('faction').textContent = data.faction;
-    document.getElementById('mana').textContent = data.mana;
-    document.getElementById('crystals').textContent = data.crystals;
+    console.log('✅ Данные получены:', userData);
+
+    document.getElementById('faction').textContent = userData.faction;
+    document.getElementById('mana').textContent = userData.mana;
+    document.getElementById('crystals').textContent = userData.crystals;
 
     const grid = document.getElementById('city-grid');
     grid.innerHTML = '';
@@ -41,12 +39,12 @@ async function loadUserData() {
       const cell = document.createElement('div');
       cell.className = 'cell';
       cell.dataset.index = i;
-      cell.addEventListener('click', () => onCellClick(cell, data));
+      cell.addEventListener('click', () => onCellClick(cell, userData));
       grid.appendChild(cell);
     }
   } catch (e) {
     console.error('❌ Ошибка:', e);
-    document.body.innerHTML = `<h2>❌ Ошибка: ${e.message}</h2>`;
+    document.body.innerHTML = `<h2>❌ Ошибка загрузки: ${e.message}</h2>`;
   }
 }
 
@@ -75,19 +73,27 @@ async function buildStructure(cell, userData) {
   const newCrystals = userData.crystals - 50;
   const newMana = userData.mana + 10;
 
-  const { error } = await supabase
-    .from('users')
-    .update({ crystals: newCrystals, mana: newMana })
-    .eq('id', userData.id);
+  // Обновляем данные через API
+  const response = await fetch(`/api/user`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      user_id: userData.id,
+      crystals: newCrystals,
+      mana: newMana
+    })
+  });
 
-  if (error) {
-    alert('❌ Ошибка сохранения!');
-    console.error(error);
-    cell.classList.remove('built', 'mana-collector');
-    cell.textContent = '';
-  } else {
+  const result = await response.json();
+
+  if (response.ok) {
     document.getElementById('crystals').textContent = newCrystals;
     document.getElementById('mana').textContent = newMana;
     alert('✅ Здание построено!');
+  } else {
+    alert('❌ Ошибка сохранения!');
+    cell.classList.remove('built', 'mana-collector');
+    cell.textContent = '';
+    console.error(result.error);
   }
 }
