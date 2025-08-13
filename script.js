@@ -38,9 +38,20 @@ async function loadUserData() {
     console.log('📥 Загрузка данных пользователя из Firebase...');
     const snapshot = await database.ref(`users/${userId}`).once('value');
     const data = snapshot.val();
-    
+
     if (data) {
       userData = data;
+      // Инициализируем массив buildings, если его нет
+      if (!userData.buildings || !Array.isArray(userData.buildings)) {
+        console.log('🔧 Инициализация массива buildings');
+        userData.buildings = Array(49).fill(false); // 7x7 сетка = 49 ячеек
+      } else if (userData.buildings.length < 49) {
+        // Если массив есть, но короче, чем нужно, дополняем его
+        console.log('🔧 Корректировка длины массива buildings');
+        while (userData.buildings.length < 49) {
+          userData.buildings.push(false);
+        }
+      }
       console.log('✅ Данные пользователя загружены:', userData);
       updateUI();
     } else {
@@ -53,14 +64,32 @@ async function loadUserData() {
   }
 }
 
+// Функция для сохранения данных пользователя в Firebase
+async function saveUserData() {
+  try {
+    // Сохраняем только необходимые поля
+    const dataToSave = {
+      mana: userData.mana,
+      crystals: userData.crystals,
+      buildings: userData.buildings
+    };
+    await database.ref(`users/${userId}`).update(dataToSave);
+    console.log('✅ Данные пользователя обновлены в Firebase');
+  } catch (error) {
+    console.error('❌ Ошибка сохранения данных:', error);
+    alert('❌ Ошибка сохранения данных');
+    throw error; // Пробрасываем ошибку для обработки в вызывающем коде
+  }
+}
+
 // Отображение данных
 function updateUI() {
   if (!userData) return;
-  
-  document.getElementById('faction').textContent = userData.faction;
-  document.getElementById('mana').textContent = userData.mana;
-  document.getElementById('crystals').textContent = userData.crystals;
-  
+
+  document.getElementById('faction').textContent = userData.faction || 'Неизвестно';
+  document.getElementById('mana').textContent = userData.mana || 0;
+  document.getElementById('crystals').textContent = userData.crystals || 0;
+
   // Создание сетки
   const grid = document.getElementById('city-grid');
   grid.innerHTML = '';
@@ -69,12 +98,21 @@ function updateUI() {
     cell.className = 'cell';
     cell.dataset.index = i;
     cell.addEventListener('click', () => onCellClick(cell));
+
+    // Проверяем, было ли здание построено
+    if (userData.buildings && userData.buildings[i]) {
+      cell.classList.add('built', 'mana-collector');
+      cell.textContent = 'М';
+    }
+
     grid.appendChild(cell);
   }
 }
 
 // Постройка здания
 async function onCellClick(cell) {
+  const index = parseInt(cell.dataset.index);
+
   if (cell.classList.contains('built')) {
     alert('Здесь уже построено!');
     return;
@@ -88,31 +126,36 @@ async function onCellClick(cell) {
   if (confirm('Построить Коллектор маны за 50 кристаллов?')) {
     cell.classList.add('built', 'mana-collector');
     cell.textContent = 'М';
-    
+
     // Обновляем данные пользователя
     userData.crystals -= 50;
     userData.mana += 10;
-    
+    // Обновляем состояние сетки
+    if (!userData.buildings) {
+      userData.buildings = Array(49).fill(false);
+    }
+    userData.buildings[index] = true;
+
     try {
       // Сохраняем данные в Firebase
-      await database.ref(`users/${userId}`).update({
-        crystals: userData.crystals,
-        mana: userData.mana
-      });
-      
-      console.log('✅ Данные пользователя обновлены в Firebase');
-      
-      // Обновляем интерфейс
-      updateUI();
+      await saveUserData();
+
+      // Обновляем интерфейс (только счетчики)
+      document.getElementById('mana').textContent = userData.mana;
+      document.getElementById('crystals').textContent = userData.crystals;
+
       alert('✅ Здание построено!');
     } catch (error) {
       console.error('❌ Ошибка сохранения данных:', error);
-      alert('❌ Ошибка сохранения данных');
       // Откатываем изменения в интерфейсе
       cell.classList.remove('built', 'mana-collector');
       cell.textContent = '';
+      userData.buildings[index] = false;
       userData.crystals += 50;
       userData.mana -= 10;
+      // Обновляем интерфейс после отката
+      document.getElementById('mana').textContent = userData.mana;
+      document.getElementById('crystals').textContent = userData.crystals;
     }
   }
 }
