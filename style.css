@@ -63,3 +63,93 @@ body {
   background: #4a4a6a;
   cursor: not-allowed;
 }
+
+/* style.css (добавить в конец) */
+
+/* Модальное окно */
+.modal {
+  display: none; /* Скрыто по умолчанию */
+  position: fixed; /* Остается на месте при прокрутке */
+  z-index: 1000; /* Находится поверх других элементов */
+  left: 0;
+  top: 0;
+  width: 100%; /* Полная ширина */
+  height: 100%; /* Полная высота */
+  overflow: auto; /* Включает прокрутку при необходимости */
+  background-color: rgba(0,0,0,0.4); /* Полупрозрачный черный фон */
+}
+
+/* Содержимое модального окна */
+.modal-content {
+  background-color: #2c2c3d;
+  margin: 5% auto; /* 15% сверху и по центру */
+  padding: 20px;
+  border: 2px solid #7289da;
+  border-radius: 10px;
+  width: 80%; /* Может быть изменено */
+  max-width: 600px;
+  color: #ffffff;
+  position: relative;
+}
+
+/* Кнопка закрытия */
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Стили для библиотеки */
+.library {
+  background: #4a752c !important; /* Зеленый цвет для библиотеки */
+  cursor: pointer;
+}
+
+.library:hover {
+  background: #5a853c !important;
+}
+
+/* Стили для кнопок в модальном окне */
+.modal-content button {
+  margin: 5px;
+  padding: 8px 12px;
+  font-size: 14px;
+  background: #7289da;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal-content button:hover {
+  background: #5b6eae;
+}
+
+.modal-content button:disabled {
+  background: #4a4a6a;
+  cursor: not-allowed;
+}
+
+.modal-content ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.modal-content li {
+  margin: 10px 0;
+  padding: 10px;
+  background: #3a3a52;
+  border-radius: 5px;
+}
