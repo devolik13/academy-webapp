@@ -1,3 +1,6 @@
+/* style.css */
+
+/* Основные стили */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: #1e1e2e;
@@ -12,6 +15,7 @@ body {
   text-align: center;
 }
 
+/* Сетка зданий */
 .grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -23,6 +27,7 @@ body {
   background: #2c2c3d;
 }
 
+/* Общие стили для ячеек */
 .cell {
   width: 50px;
   height: 50px;
@@ -31,23 +36,105 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 20px; /* Увеличен для эмодзи */
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.1s;
+  user-select: none; /* Предотвращает выделение текста при двойном клике */
 }
 
 .cell:hover {
   background: #505070;
+  transform: scale(1.05); /* Небольшое увеличение при наведении */
 }
 
+/* Стили для пустых ячеек */
+.cell.empty {
+  background: #2c2c3d;
+  color: #7289da;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.cell.empty:hover {
+  background: #3a3a52;
+  color: #ffffff;
+}
+
+/* Стили для построенных зданий */
 .cell.built {
   background: #4a752c;
+  color: #ffffff;
 }
 
-.cell.mana-collector {
-  background: #a35e15;
+/* Индивидуальные стили для разных типов зданий */
+.cell.building-library {
+  background: #6a5acd; /* Синий для библиотеки */
 }
 
+.cell.building-wizard_tower {
+  background: #9370db; /* Пурпурный для башни магов */
+}
+
+.cell.building-blessing_tower {
+  background: #da70d6; /* Орхидея для башни благословений */
+}
+
+.cell.building-aom_generator {
+  background: #4169e1; /* Королевский синий для генератора */
+}
+
+.cell.building-pvp_arena {
+  background: #cd5c5c; /* Индийский красный для арены */
+}
+
+.cell.building-defense_tower {
+  background: #2e8b57; /* Морская зелень для башни защиты */
+}
+
+.cell.building-arcane_lab {
+  background: #483d8b; /* Темный серо-голубой для лаборатории */
+}
+
+/* Стили для модальных окон (если добавите позже) */
+.modal {
+  display: none; /* Скрыто по умолчанию */
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.5); /* Полупрозрачный фон */
+}
+
+.modal-content {
+  background-color: #2c2c3d;
+  margin: 10% auto;
+  padding: 20px;
+  border: 2px solid #7289da;
+  border-radius: 10px;
+  width: 80%;
+  max-width: 500px;
+  color: #ffffff;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close:hover,
+.close:focus {
+  color: #fff;
+}
+
+/* Стили для кнопок */
 #build-btn {
   margin-top: 20px;
   padding: 10px 20px;
@@ -57,6 +144,11 @@ body {
   border: none;
   border-radius: 6px;
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+#build-btn:hover {
+  background: #5b6eae;
 }
 
 #build-btn:disabled {
@@ -64,92 +156,55 @@ body {
   cursor: not-allowed;
 }
 
-/* style.css (добавить в конец) */
-
-/* Модальное окно */
-.modal {
-  display: none; /* Скрыто по умолчанию */
-  position: fixed; /* Остается на месте при прокрутке */
-  z-index: 1000; /* Находится поверх других элементов */
-  left: 0;
-  top: 0;
-  width: 100%; /* Полная ширина */
-  height: 100%; /* Полная высота */
-  overflow: auto; /* Включает прокрутку при необходимости */
-  background-color: rgba(0,0,0,0.4); /* Полупрозрачный черный фон */
+/* Адаптивность */
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .cell {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+  
+  .modal-content {
+    width: 95%;
+    margin: 5% auto;
+  }
 }
 
-/* Содержимое модального окна */
-.modal-content {
-  background-color: #2c2c3d;
-  margin: 5% auto; /* 15% сверху и по центру */
-  padding: 20px;
-  border: 2px solid #7289da;
-  border-radius: 10px;
-  width: 80%; /* Может быть изменено */
-  max-width: 600px;
-  color: #ffffff;
-  position: relative;
+/* Анимации */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
-/* Кнопка закрытия */
-.close {
-  color: #aaa;
-  float: right;
-  font-size: 28px;
+.cell.building-active {
+  animation: pulse 2s infinite;
+}
+
+/* Стили для информационных блоков */
+.info-panel {
+  background: #2c2c3d;
+  border: 1px solid #7289da;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+  text-align: left;
+}
+
+.info-panel h3 {
+  margin-top: 0;
+  color: #7289da;
+}
+
+.info-panel p {
+  margin: 5px 0;
+}
+
+.info-panel .highlight {
+  color: #ffd700; /* Золотой для выделения важной информации */
   font-weight: bold;
-  position: absolute;
-  right: 15px;
-  top: 10px;
-  cursor: pointer;
-}
-
-.close:hover,
-.close:focus {
-  color: #fff;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-/* Стили для библиотеки */
-.library {
-  background: #4a752c !important; /* Зеленый цвет для библиотеки */
-  cursor: pointer;
-}
-
-.library:hover {
-  background: #5a853c !important;
-}
-
-/* Стили для кнопок в модальном окне */
-.modal-content button {
-  margin: 5px;
-  padding: 8px 12px;
-  font-size: 14px;
-  background: #7289da;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.modal-content button:hover {
-  background: #5b6eae;
-}
-
-.modal-content button:disabled {
-  background: #4a4a6a;
-  cursor: not-allowed;
-}
-
-.modal-content ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.modal-content li {
-  margin: 10px 0;
-  padding: 10px;
-  background: #3a3a52;
-  border-radius: 5px;
 }
