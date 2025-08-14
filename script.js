@@ -1,6 +1,11 @@
 // script.js
 console.log('✅ script.js загружен');
 
+// Импортируем Firebase SDK (используем compat версии для простоты)
+// Эти скрипты должны быть подключены в index.html:
+// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 // Конфигурация Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAHl5EUnVHlIJLqsi_wfT14PkE-NClMtMU",
@@ -29,10 +34,65 @@ if (!userId) {
 
 console.log('👤 User ID:', userId);
 
-// Глобальная переменная для данных пользователя
+// Глобальные переменные
 let userData = null;
-// Индекс библиотеки в сетке (должен совпадать с тем, что в database.py)
-const LIBRARY_INDEX = 24;
+let buildingsConfig = {}; // Будет заполнен данными о зданиях
+
+// Эмодзи для зданий (можно расширить)
+const BUILDING_EMOJIS = {
+  "library": "📚",
+  "wizard_tower": "🧙‍♂️",
+  "blessing_tower": "🛐",
+  "aom_generator": "💎",
+  "pvp_arena": "⚔️",
+  "defense_tower": "🛡️",
+  "arcane_lab": "⚗️",
+  "mana_collector": "🔮" // Коллектор маны (если будет)
+};
+
+// Функция для получения конфигурации зданий с сервера
+// Пока используем локальную копию, в будущем можно сделать API endpoint
+function getBuildingsConfig() {
+  // Это упрощенная локальная копия BUILDINGS_DATA из buildings_config.py
+  // В реальной реализации лучше получать это с сервера
+  return {
+    "library": {
+      "name": "Библиотека",
+      "emoji": "📚",
+      "description": "Центр исследований заклинаний."
+    },
+    "wizard_tower": {
+      "name": "Башня магов",
+      "emoji": "🧙‍♂️",
+      "description": "Усиливает магов и позволяет нанимать новых."
+    },
+    "blessing_tower": {
+      "name": "Башня благословений",
+      "emoji": "🛐",
+      "description": "Открывает мощные временные благословения для магов."
+    },
+    "aom_generator": {
+      "name": "Генератор АОМ",
+      "emoji": "💎",
+      "description": "Производит кристаллы AOM - основную валюту."
+    },
+    "pvp_arena": {
+      "name": "PvP Арена",
+      "emoji": "⚔️",
+      "description": "Проведение боев 1 на 1 по принципу autochess с рейтингом."
+    },
+    "defense_tower": {
+      "name": "Башня защиты",
+      "emoji": "🛡️",
+      "description": "Защищает город, используя изученные заклинания."
+    },
+    "arcane_lab": {
+      "name": "Арканская лаборатория",
+      "emoji": "⚗️",
+      "description": "Ускоряет процесс исследования заклинаний."
+    }
+  };
+}
 
 // Функция для загрузки данных пользователя из Firebase
 async function loadUserData() {
@@ -40,19 +100,10 @@ async function loadUserData() {
     console.log('📥 Загрузка данных пользователя из Firebase...');
     const snapshot = await database.ref(`users/${userId}`).once('value');
     const data = snapshot.val();
-
+    
     if (data) {
       userData = data;
-      // Инициализируем массив buildings, если его нет
-      if (!userData.buildings || !Array.isArray(userData.buildings)) {
-        console.log('🔧 Инициализация массива buildings');
-        userData.buildings = Array(49).fill(false);
-      } else if (userData.buildings.length < 49) {
-        console.log('🔧 Корректировка длины массива buildings');
-        while (userData.buildings.length < 49) {
-          userData.buildings.push(false);
-        }
-      }
+      buildingsConfig = getBuildingsConfig(); // Получаем конфигурацию зданий
       console.log('✅ Данные пользователя загружены:', userData);
       updateUI();
     } else {
@@ -72,13 +123,7 @@ async function saveUserData() {
     const dataToSave = {
       mana: userData.mana,
       crystals: userData.crystals,
-      buildings: userData.buildings,
-      // Также сохраняем spells, research, wizards, available_spells если они изменились
-      // Для простоты сохраним их все
-      spells: userData.spells,
-      research: userData.research,
-      wizards: userData.wizards,
-      available_spells: userData.available_spells
+      // В реальной реализации нужно сохранять только измененные данные
     };
     await database.ref(`users/${userId}`).update(dataToSave);
     console.log('✅ Данные пользователя обновлены в Firebase');
@@ -97,248 +142,130 @@ function updateUI() {
   document.getElementById('mana').textContent = userData.mana || 0;
   document.getElementById('crystals').textContent = userData.crystals || 0;
 
-  // Создание сетки
+  // Создание сетки зданий
+  updateBuildingsGrid();
+}
+
+// Обновление сетки зданий
+function updateBuildingsGrid() {
   const grid = document.getElementById('city-grid');
+  if (!grid) {
+    console.error('❌ Элемент city-grid не найден в DOM');
+    return;
+  }
+  
   grid.innerHTML = '';
+  const buildingsGrid = userData.buildings_grid || Array(49).fill(null);
+  
   for (let i = 0; i < 49; i++) {
     const cell = document.createElement('div');
     cell.className = 'cell';
     cell.dataset.index = i;
     
-    // Проверяем, построено ли здание
-    if (userData.buildings && userData.buildings[i]) {
+    const buildingId = buildingsGrid[i];
+    
+    if (buildingId) {
+      // В ячейке есть здание
       cell.classList.add('built');
-      // Проверяем, является ли это библиотекой
-      if (i === LIBRARY_INDEX) {
-        cell.classList.add('library');
-        cell.textContent = '📚'; // Эмодзи библиотеки
-        // Добавляем обработчик клика для библиотеки
-        cell.addEventListener('click', () => openLibrary());
+      
+      // Получаем информацию о здании из конфигурации
+      const buildingConfig = buildingsConfig[buildingId];
+      const buildingInfo = userData.buildings[buildingId];
+      
+      if (buildingConfig) {
+        cell.textContent = buildingConfig.emoji || '🏛️';
+        cell.title = `${buildingConfig.name} (уровень ${buildingInfo?.level || 1})`;
+        
+        // Добавляем класс по ID здания для стилизации
+        cell.classList.add(`building-${buildingId}`);
       } else {
-        // Для других построенных зданий можно добавить другой обработчик или текст
-        cell.textContent = '🏠'; // Общий эмодзи для зданий
-        cell.addEventListener('click', () => alert(`Здание в ячейке ${i}`)); // Заглушка
+        cell.textContent = '🏛️';
+        cell.title = `Здание (${buildingId})`;
       }
+      
+      // Добавляем обработчик клика для здания
+      cell.addEventListener('click', () => onBuildingClick(cell, buildingId, i));
     } else {
-      // Непостроенная ячейка
-      cell.addEventListener('click', () => onCellClick(cell));
+      // Пустая ячейка
+      cell.classList.add('empty');
+      cell.textContent = '+';
+      cell.title = 'Пустая ячейка. Кликните, чтобы построить.';
+      
+      // Добавляем обработчик клика для пустой ячейки
+      cell.addEventListener('click', () => onEmptyCellClick(cell, i));
     }
 
     grid.appendChild(cell);
   }
 }
 
-// Постройка здания (для новых ячеек)
-async function onCellClick(cell) {
-  const index = parseInt(cell.dataset.index);
-
-  // Временно отключим возможность строить новые здания через этот интерфейс
-  // Пока реализуем только взаимодействие с существующими
-  alert('Постройка новых зданий будет доступна позже!');
-  return;
-
-  // Оригинальная логика постройки коллектора маны (закомментирована)
-  /*
-  if (cell.classList.contains('built')) {
-    alert('Здесь уже построено!');
+// Обработчик клика по зданию
+function onBuildingClick(cell, buildingId, cellIndex) {
+  console.log(`🏢 Клик по зданию: ${buildingId} в ячейке ${cellIndex}`);
+  
+  // Получаем информацию о здании
+  const buildingConfig = buildingsConfig[buildingId];
+  const buildingInfo = userData.buildings[buildingId];
+  
+  if (!buildingConfig) {
+    alert(`Неизвестное здание: ${buildingId}`);
     return;
   }
-
-  if (userData.crystals < 50) {
-    alert('Недостаточно кристаллов!');
-    return;
-  }
-
-  if (confirm('Построить Коллектор маны за 50 кристаллов?')) {
-    cell.classList.add('built', 'mana-collector');
-    cell.textContent = 'М';
-    
-    // Обновляем данные пользователя
-    userData.crystals -= 50;
-    userData.mana += 10;
-    // Обновляем состояние сетки
-    if (!userData.buildings) {
-      userData.buildings = Array(49).fill(false);
-    }
-    userData.buildings[index] = true;
-
-    try {
-      // Сохраняем данные в Firebase
-      await saveUserData();
-
-      // Обновляем интерфейс (только счетчики)
-      document.getElementById('mana').textContent = userData.mana;
-      document.getElementById('crystals').textContent = userData.crystals;
-
-      alert('✅ Здание построено!');
-    } catch (error) {
-      console.error('❌ Ошибка сохранения данных:', error);
-      // Откатываем изменения в интерфейсе
-      cell.classList.remove('built', 'mana-collector');
-      cell.textContent = '';
-      userData.buildings[index] = false;
-      userData.crystals += 50;
-      userData.mana -= 10;
-      // Обновляем интерфейс после отката
-      document.getElementById('mana').textContent = userData.mana;
-      document.getElementById('crystals').textContent = userData.crystals;
-    }
-  }
-  */
-}
-
-// Функция для открытия окна библиотеки
-function openLibrary() {
-  // Создаем или показываем модальное окно библиотеки
-  const modal = document.getElementById('library-modal');
-  if (modal) {
-    modal.style.display = 'block';
-    updateLibraryContent();
+  
+  // Формируем информацию для отображения
+  let infoText = `🏛️ **${buildingConfig.name}**\n`;
+  infoText += `📝 ${buildingConfig.description}\n`;
+  infoText += `📊 Уровень: ${buildingInfo?.level || 1}\n\n`;
+  
+  // Проверяем, можно ли улучшить здание
+  const maxLevel = getBuildingMaxLevel(buildingId);
+  const currentLevel = buildingInfo?.level || 1;
+  
+  if (currentLevel < maxLevel) {
+    infoText += `⬆️ Можно улучшить до уровня ${currentLevel + 1}\n`;
+    infoText += `Команда в боте: \`/upgrade ${buildingId} ${currentLevel + 1}\``;
   } else {
-    createLibraryModal();
-    updateLibraryContent();
+    infoText += `✅ Здание на максимальном уровне (${maxLevel})`;
   }
+  
+  // Показываем информацию во всплывающем окне или модальном окне
+  alert(infoText.replace(/\`/g, '')); // Убираем markdown для alert
 }
 
-// Функция для создания модального окна библиотеки
-function createLibraryModal() {
-  const modalHTML = `
-    <div id="library-modal" class="modal">
-      <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2>📚 Библиотека Заклинаний</h2>
-        <div id="library-content">
-          <!-- Содержимое библиотеки будет здесь -->
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.insertAdjacentHTML('beforeend', modalHTML);
+// Обработчик клика по пустой ячейке
+function onEmptyCellClick(cell, cellIndex) {
+  console.log(`➕ Клик по пустой ячейке: ${cellIndex}`);
   
-  // Добавляем обработчики событий
-  const modal = document.getElementById('library-modal');
-  const span = modal.querySelector('.close');
+  // Формируем список доступных для постройки зданий
+  // Пока покажем простое сообщение
+  let buildText = `🏗️ **Постройка здания**\n`;
+  buildText += `Выберите здание для постройки в ячейке ${cellIndex}:\n\n`;
   
-  span.onclick = function() {
-    modal.style.display = 'none';
-  }
+  // Добавляем несколько примеров зданий
+  buildText += `💎 \`/build aom_generator\` - Генератор АОМ\n`;
+  buildText += `⚔️ \`/build pvp_arena\` - PvP Арена\n`;
+  buildText += `🛡️ \`/build defense_tower\` - Башня защиты\n`;
+  buildText += `...\n\n`;
+  buildText += `Введите команду в Telegram боте для начала постройки.`;
   
-  window.onclick = function(event) {
-    if (event.target == modal) {
-      modal.style.display = 'none';
-    }
-  }
+  // Показываем информацию
+  alert(buildText.replace(/\`/g, '')); // Убираем markdown для alert
 }
 
-// Функция для обновления содержимого библиотеки
-function updateLibraryContent() {
-  const contentDiv = document.getElementById('library-content');
-  if (!contentDiv) return;
-  
-  if (!userData || !userData.spells) {
-    contentDiv.innerHTML = '<p>Нет данных о заклинаниях.</p>';
-    return;
-  }
-  
-  let html = '<h3>Доступные заклинания:</h3>';
-  
-  // Проходим по всем фракциям и их заклинаниям
-  for (const [faction, spells] of Object.entries(userData.spells)) {
-    if (Object.keys(spells).length > 0) {
-      html += `<h4>${faction.toUpperCase()}:</h4>`;
-      html += '<ul>';
-      for (const [spellId, spellInfo] of Object.entries(spells)) {
-        const isAvailable = userData.available_spells && userData.available_spells.includes(spellId);
-        const status = isAvailable ? '✅' : '🔒';
-        html += `<li>
-          ${status} <strong>${spellInfo.name}</strong> 
-          (Ступень ${spellInfo.tier}, Уровень ${spellInfo.level})
-          <br>
-          <button onclick="startResearch('${spellId}', ${spellInfo.level + 1}, '${faction}')"
-                  ${!isAvailable ? 'disabled' : ''}>
-            Улучшить до уровня ${spellInfo.level + 1}
-          </button>
-          <!-- Кнопка изучения других фракций может быть здесь -->
-        </li>`;
-      }
-      html += '</ul>';
-    }
-  }
-  
-  // Кнопка для изучения новых заклинаний (заглушка)
-  html += `
-    <h3>Изучить новые заклинания:</h3>
-    <p><em>Функция изучения заклинаний других фракций будет доступна позже.</em></p>
-    <!-- Здесь можно добавить список доступных для изучения заклинаний -->
-  `;
-  
-  contentDiv.innerHTML = html;
-}
-
-// Функция для начала исследования
-async function startResearch(spellId, targetLevel, faction) {
-  // Проверяем, нет ли уже активного исследования
-  if (userData.research && userData.research.active) {
-    alert('У вас уже есть активное исследование!');
-    return;
-  }
-  
-  // Находим информацию о заклинании
-  let spellInfo = null;
-  if (userData.spells[faction] && userData.spells[faction][spellId]) {
-    spellInfo = userData.spells[faction][spellId];
-  }
-  
-  if (!spellInfo) {
-    alert('Заклинание не найдено!');
-    return;
-  }
-  
-  // Проверяем, можно ли улучшить до targetLevel
-  if (targetLevel > 5) {
-    alert('Максимальный уровень заклинания - 5!');
-    return;
-  }
-  
-  // Рассчитываем время исследования
-  // Базовое время = 2^(уровень_цели - 2) дней
-  let baseTime = targetLevel === 2 ? 1 : Math.pow(2, targetLevel - 2);
-  
-  // Множитель за фракцию (пока считаем, что все заклинания в списке - своей фракции)
-  const factionBonus = faction === userData.faction;
-  const timeMultiplier = factionBonus ? 1 : 2;
-  
-  const totalTime = baseTime * timeMultiplier;
-  
-  // Подтверждение
-  const factionText = factionBonus ? 'своей фракции' : 'чужой фракции';
-  if (confirm(`Начать исследование "${spellInfo.name}" до уровня ${targetLevel} (${factionText})?\nВремя: ${totalTime} дней`)) {
-    // Обновляем данные исследования
-    userData.research = {
-      active: true,
-      spell: spellId,
-      target_level: targetLevel,
-      time_left: totalTime,
-      faction_bonus: factionBonus
-    };
-    
-    try {
-      await saveUserData();
-      alert(`✅ Исследование "${spellInfo.name}" до уровня ${targetLevel} начато!\nОсталось: ${totalTime} дней.`);
-      
-      // Закрываем модальное окно
-      const modal = document.getElementById('library-modal');
-      if (modal) {
-        modal.style.display = 'none';
-      }
-      
-    } catch (error) {
-      console.error('❌ Ошибка начала исследования:', error);
-      alert('❌ Ошибка начала исследования.');
-      // Откатываем изменения
-      userData.research = { active: false, spell: null, target_level: null, time_left: 0, faction_bonus: false };
-    }
-  }
+// Вспомогательные функции
+function getBuildingMaxLevel(buildingId) {
+  // Это упрощенная реализация
+  // В реальной системе нужно получать это из buildings_config
+  const maxLevels = {
+    "library": 1,
+    "wizard_tower": 10,
+    "blessing_tower": 5,
+    "aom_generator": 20,
+    "pvp_arena": 1,
+    "defense_tower": 5,
+    "arcane_lab": 15
+  };
+  return maxLevels[buildingId] || 1;
 }
 
 // Загрузка и отображение данных при запуске
