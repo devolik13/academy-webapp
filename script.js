@@ -3,8 +3,8 @@ console.log('✅ script.js загружен');
 
 // Импортируем Firebase SDK (используем compat версии для простоты)
 // Эти скрипты должны быть подключены в index.html:
-// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+//  
+//  
 
 // Конфигурация Firebase
 const firebaseConfig = {
@@ -59,37 +59,44 @@ function getBuildingsConfig() {
     "library": {
       "name": "Библиотека",
       "emoji": "📚",
-      "description": "Центр исследований заклинаний."
+      "description": "Центр исследований заклинаний.",
+      "can_build": false // Нельзя строить
     },
     "wizard_tower": {
       "name": "Башня магов",
       "emoji": "🧙‍♂️",
-      "description": "Усиливает магов и позволяет нанимать новых."
-    },
+      "description": "Усиливает магов и позволяет нанимать новых.",
+      "can_build": false // Нельзя строить
+    }, 
     "blessing_tower": {
       "name": "Башня благословений",
       "emoji": "🛐",
-      "description": "Открывает мощные временные благословения для магов."
+      "description": "Открывает мощные временные благословения для магов.",
+      "can_build": true
     },
     "aom_generator": {
       "name": "Генератор АОМ",
       "emoji": "💎",
-      "description": "Производит кристаллы AOM - основную валюту."
+      "description": "Производит кристаллы AOM - основную валюту.",
+      "can_build": true
     },
     "pvp_arena": {
       "name": "PvP Арена",
       "emoji": "⚔️",
-      "description": "Проведение боев 1 на 1 по принципу autochess с рейтингом."
+      "description": "Проведение боев 1 на 1 по принципу autochess с рейтингом.",
+      "can_build": true
     },
     "defense_tower": {
       "name": "Башня защиты",
       "emoji": "🛡️",
-      "description": "Защищает город, используя изученные заклинания."
+      "description": "Защищает город, используя изученные заклинания.",
+      "can_build": true
     },
     "arcane_lab": {
       "name": "Арканская лаборатория",
       "emoji": "⚗️",
-      "description": "Ускоряет процесс исследования заклинаний."
+      "description": "Ускоряет процесс исследования заклинаний.",
+      "can_build": true
     }
   };
 }
@@ -237,19 +244,69 @@ function onEmptyCellClick(cell, cellIndex) {
   console.log(`➕ Клик по пустой ячейке: ${cellIndex}`);
   
   // Формируем список доступных для постройки зданий
-  // Пока покажем простое сообщение
-  let buildText = `🏗️ **Постройка здания**\n`;
-  buildText += `Выберите здание для постройки в ячейке ${cellIndex}:\n\n`;
-  
-  // Добавляем несколько примеров зданий
-  buildText += `💎 \`/build aom_generator\` - Генератор АОМ\n`;
-  buildText += `⚔️ \`/build pvp_arena\` - PvP Арена\n`;
-  buildText += `🛡️ \`/build defense_tower\` - Башня защиты\n`;
-  buildText += `...\n\n`;
-  buildText += `Введите команду в Telegram боте для начала постройки.`;
-  
-  // Показываем информацию
-  alert(buildText.replace(/\`/g, '')); // Убираем markdown для alert
+  const buildableBuildings = Object.entries(buildingsConfig).filter(
+    ([id, data]) => data.can_build !== false
+  );
+
+  if (buildableBuildings.length === 0) {
+    alert("Нет доступных зданий для постройки.");
+    return;
+  }
+
+  let menuText = `🏗️ Построить в ячейке ${cellIndex}:\n`;
+  buildableBuildings.forEach(([id, data], index) => {
+    menuText += `${index + 1}. ${data.emoji} ${data.name}\n`;
+  });
+  menuText += `\nВведите номер здания (1-${buildableBuildings.length}):`;
+
+  const choice = prompt(menuText);
+
+  if (choice === null) return; // Отмена
+
+  const selectedIndex = parseInt(choice, 10) - 1;
+  if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= buildableBuildings.length) {
+    alert("Неверный выбор.");
+    return;
+  }
+
+  const [selectedBuildingId, selectedBuildingData] = buildableBuildings[selectedIndex];
+  console.log(`Пользователь выбрал постройку ${selectedBuildingId} в ячейке ${cellIndex}`);
+
+  // Отправка запроса на бэкенд
+  initiateBuild(selectedBuildingId, cellIndex);
+}
+
+// Функция для отправки запроса на постройку
+async function initiateBuild(buildingId, cellIndex) {
+  try {
+    // URL вашего API endpoint для постройки
+    const apiUrl = 'http://127.0.0.1:8000/api/build'; // Убедитесь, что это правильный URL
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        building_id: buildingId,
+        cell_index: cellIndex,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      alert(`✅ ${data.message}`); // Или обновить UI
+      // Перезагрузить данные пользователя, чтобы отразить изменения
+      await loadUserData();
+    } else {
+      alert(`❌ Ошибка: ${data.detail || 'Неизвестная ошибка'}`);
+    }
+  } catch (error) {
+    console.error('Ошибка при отправке запроса на постройку:', error);
+    alert('❌ Ошибка соединения. Попробуйте позже.');
+  }
 }
 
 // Вспомогательные функции
