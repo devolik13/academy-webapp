@@ -38,20 +38,7 @@ console.log('👤 User ID:', userId);
 let userData = null;
 let buildingsConfig = {}; // Будет заполнен данными о зданиях
 
-// Эмодзи для зданий (можно расширить)
-const BUILDING_EMOJIS = {
-  "library": "📚",
-  "wizard_tower": "🧙‍♂️",
-  "blessing_tower": "🛐",
-  "aom_generator": "💎",
-  "pvp_arena": "⚔️",
-  "defense_tower": "🛡️",
-  "arcane_lab": "⚗️",
-  "mana_collector": "🔮" // Коллектор маны (если будет)
-};
-
 // Функция для получения конфигурации зданий с сервера
-// Пока используем локальную копию, в будущем можно сделать API endpoint
 function getBuildingsConfig() {
   // Это упрощенная локальная копия BUILDINGS_DATA из buildings_config.py
   // В реальной реализации лучше получать это с сервера
@@ -153,7 +140,7 @@ function updateUI() {
   updateBuildingsGrid();
 }
 
-// Обновление сетки зданий
+// Обновление сетки зданий (3x3)
 function updateBuildingsGrid() {
   const grid = document.getElementById('city-grid');
   if (!grid) {
@@ -161,16 +148,26 @@ function updateBuildingsGrid() {
     return;
   }
   
+  // Изменяем класс сетки для 3x3
+  grid.className = 'grid grid-3x3';
   grid.innerHTML = '';
-  const buildingsGrid = userData.buildings_grid || Array(49).fill(null);
   
-  for (let i = 0; i < 49; i++) {
+  // Теперь 9 ячеек вместо 49
+  const buildingsGrid = userData.buildings_grid || Array(9).fill(null);
+  
+  for (let i = 0; i < 9; i++) {
     const cell = document.createElement('div');
     cell.className = 'cell';
     cell.dataset.index = i;
     
     const buildingId = buildingsGrid[i];
+    const construction = userData.construction || {};
     
+    // Проверяем, строится ли что-то в этой ячейке
+    const isUnderConstruction = construction.active && 
+                               construction.cell_index === i && 
+                               construction.type === 'build';
+
     if (buildingId) {
       // В ячейке есть здание
       cell.classList.add('built');
@@ -192,6 +189,14 @@ function updateBuildingsGrid() {
       
       // Добавляем обработчик клика для здания
       cell.addEventListener('click', () => onBuildingClick(cell, buildingId, i));
+    } else if (isUnderConstruction) {
+      // В ячейке идет постройка
+      cell.classList.add('under-construction');
+      cell.textContent = '🔨'; // Значок молотка
+      cell.title = 'Идет постройка...';
+      
+      // Можно добавить анимацию пульсации
+      cell.classList.add('pulse');
     } else {
       // Пустая ячейка
       cell.classList.add('empty');
