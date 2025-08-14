@@ -140,7 +140,7 @@ function updateUI() {
   updateBuildingsGrid();
 }
 
-// Обновление сетки зданий (3x3)
+// Обновление сетки зданий (теперь 3x3)
 function updateBuildingsGrid() {
   const grid = document.getElementById('city-grid');
   if (!grid) {
@@ -152,10 +152,21 @@ function updateBuildingsGrid() {
   grid.className = 'grid grid-3x3';
   grid.innerHTML = '';
   
-  // Теперь 9 ячеек вместо 49
-  const buildingsGrid = userData.buildings_grid || Array(9).fill(null);
+  // Теперь 9 ячеек вместо 49 (для 3x3 сетки)
+  // Убедимся, что массив buildings_grid имеет правильный размер
+  let buildingsGrid = userData.buildings_grid || Array(9).fill(null);
   
-  for (let i = 0; i < 9; i++) {
+  // Если в данных больше 9 элементов, обрезаем до 9
+  // Если меньше 9, дополним null-ами (на случай, если структура данных еще не обновлена)
+  if (buildingsGrid.length > 9) {
+    buildingsGrid = buildingsGrid.slice(0, 9);
+  } else if (buildingsGrid.length < 9) {
+    while (buildingsGrid.length < 9) {
+      buildingsGrid.push(null);
+    }
+  }
+  
+  for (let i = 0; i < 9; i++) { // Всегда 9 итераций для 3x3
     const cell = document.createElement('div');
     cell.className = 'cell';
     cell.dataset.index = i;
@@ -210,6 +221,7 @@ function updateBuildingsGrid() {
     grid.appendChild(cell);
   }
 }
+
 
 // Обработчик клика по зданию
 function onBuildingClick(cell, buildingId, cellIndex) {
