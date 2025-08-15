@@ -38,16 +38,15 @@ console.log('👤 User ID:', userId);
 let userData = null;
 let buildingsConfig = {}; // Будет заполнен данными о зданиях
 
-// Эмодзи для зданий (можно расширить)
 const BUILDING_EMOJIS = {
-  "library": "📚",
-  "wizard_tower": "🧙‍♂️",
-  "blessing_tower": "🛐",
-  "aom_generator": "💎",
-  "pvp_arena": "⚔️",
-  "defense_tower": "🛡️",
-  "arcane_lab": "⚗️",
-  "mana_collector": "🔮" // Коллектор маны (если будет)
+  "library": "images/library.png",
+  "wizard_tower": "images/wizard_tower.png",
+  "blessing_tower": "images/blessing_tower.png",
+  "aom_generator": "images/aom_generator.png",
+  "pvp_arena": "images/pvp_arena.png",
+  "defense_tower": "images/defense_tower.png",
+  "arcane_lab": "images/arcane_lab.png",
+  "mana_collector": "images/mana_collector.png" // Коллектор маны (если будет)
 };
 
 // Функция для получения конфигурации зданий с сервера
@@ -147,6 +146,7 @@ function updateUI() {
 }
 
 // Обновление сетки зданий
+
 function updateBuildingsGrid() {
   const grid = document.getElementById('city-grid');
   if (!grid) {
@@ -155,15 +155,21 @@ function updateBuildingsGrid() {
   }
   
   grid.innerHTML = '';
-  const buildingsGrid = userData.buildings_grid || Array(49).fill(null);
+  const buildingsGrid = userData.buildings_grid || Array(9).fill(null); // 3x3 сетка
   
-  for (let i = 0; i < 49; i++) {
+  for (let i = 0; i < 9; i++) {
     const cell = document.createElement('div');
     cell.className = 'cell';
     cell.dataset.index = i;
     
     const buildingId = buildingsGrid[i];
+    const construction = userData.construction || {};
     
+    // Проверяем, строится ли что-то в этой ячейке
+    const isUnderConstruction = construction.active && 
+                               construction.cell_index === i && 
+                               construction.type === 'build';
+
     if (buildingId) {
       // В ячейке есть здание
       cell.classList.add('built');
@@ -173,7 +179,10 @@ function updateBuildingsGrid() {
       const buildingInfo = userData.buildings[buildingId];
       
       if (buildingConfig) {
-        cell.textContent = buildingConfig.emoji || '🏛️';
+        const img = document.createElement('img');
+        img.src = buildingConfig.emoji; // Теперь это URL изображения
+        img.alt = buildingConfig.name;
+        cell.appendChild(img);
         cell.title = `${buildingConfig.name} (уровень ${buildingInfo?.level || 1})`;
         
         // Добавляем класс по ID здания для стилизации
@@ -185,6 +194,14 @@ function updateBuildingsGrid() {
       
       // Добавляем обработчик клика для здания
       cell.addEventListener('click', () => onBuildingClick(cell, buildingId, i));
+    } else if (isUnderConstruction) {
+      // В ячейке идет постройка
+      cell.classList.add('under-construction');
+      cell.textContent = '🔨'; // Значок молотка
+      cell.title = 'Идет постройка...';
+      
+      // Можно добавить анимацию пульсации
+      cell.classList.add('pulse');
     } else {
       // Пустая ячейка
       cell.classList.add('empty');
@@ -198,6 +215,7 @@ function updateBuildingsGrid() {
     grid.appendChild(cell);
   }
 }
+
 
 // Обработчик клика по зданию
 function onBuildingClick(cell, buildingId, cellIndex) {
