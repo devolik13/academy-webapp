@@ -13,10 +13,26 @@ body {
   text-align: center;
 }
 
-/* Сетка зданий */
+/* Панель информации */
+.info-panel {
+  background: #2c2c3d;
+  border: 1px solid #7289da;
+  border-radius: 8px;
+  padding: 15px;
+  margin: 15px 0;
+  text-align: left;
+}
+
+.info-panel p {
+  margin: 5px 0;
+}
+
+
+/* Сетка зданий 3x3 */
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 колонки */
+  /* Изначально 7x7, будет переключено на 3x3 через JS */
+  grid-template-columns: repeat(7, 1fr); 
   gap: 4px;
   margin: 20px auto;
   width: fit-content;
@@ -25,19 +41,34 @@ body {
   background: #2c2c3d;
 }
 
+/* Класс для 3x3 сетки */
+.grid-3x3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 /* Общие стили для ячеек */
 .cell {
-  width: 70px; /* Увеличенная ширина */
-  height: 70px; /* Увеличенная высота */
+  /* Размеры для 7x7 сетки */
+  width: 50px;
+  height: 50px;
   background: #3a3a52;
   border: 1px solid #555;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px; /* Увеличенный размер шрифта */
+  font-size: 20px; /* Для эмодзи */
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
   user-select: none; /* Предотвращает выделение текста при двойном клике */
+  overflow: hidden; /* Прячет часть изображения, если оно не вписывается */
+}
+
+/* Стили для ячеек в 3x3 сетке */
+.grid-3x3 .cell {
+  /* Увеличенные размеры для 3x3 сетки */
+  width: 70px;
+  height: 70px;
+  font-size: 24px; /* Для эмодзи */
 }
 
 .cell:hover {
@@ -49,8 +80,12 @@ body {
 .cell.empty {
   background: #2c2c3d;
   color: #7289da;
-  font-size: 24px;
+  font-size: 24px; /* Для "+" */
   font-weight: bold;
+}
+
+.grid-3x3 .cell.empty {
+  font-size: 28px; /* Для "+" в 3x3 */
 }
 
 .cell.empty:hover {
@@ -64,7 +99,38 @@ body {
   color: #ffffff;
 }
 
-/* Индивидуальные стили для разных типов зданий */
+/* Стили для ячейки в процессе постройки */
+.cell.under-construction {
+  background: #ffa500; /* Оранжевый цвет */
+  color: #000;
+  font-size: 24px; /* Для молотка */
+  font-weight: bold;
+}
+
+.grid-3x3 .cell.under-construction {
+  font-size: 28px; /* Для молотка в 3x3 */
+}
+
+/* Анимация пульсации для постройки */
+.cell.under-construction.pulse {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Стили для изображений зданий */
+.cell.built img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Изображение заполняет ячейку, обрезая края при необходимости */
+  /* object-fit: contain; */ /* Альтернатива: изображение полностью вписывается, могут быть поля */
+}
+
+/* Индивидуальные стили для разных типов зданий (если нужно дополнительно выделить) */
 .cell.building-library {
   background: #6a5acd; /* Синий для библиотеки */
 }
@@ -73,51 +139,47 @@ body {
   background: #9370db; /* Пурпурный для башни магов */
 }
 
-.cell.building-blessing_tower {
-  background: #da70d6; /* Орхидея для башни благословений */
-}
-
-.cell.building-aom_generator {
-  background: #4169e1; /* Королевский синий для генератора */
-}
-
-.cell.building-pvp_arena {
-  background: #cd5c5c; /* Индийский красный для арены */
-}
-
-.cell.building-defense_tower {
-  background: #2e8b57; /* Морская зелень для башни защиты */
-}
-
-.cell.building-arcane_lab {
-  background: #483d8b; /* Темный серо-голубой для лаборатории */
-}
-
 /* Адаптивность */
 @media (max-width: 600px) {
   .container {
     padding: 10px;
   }
   
+  /* Адаптация для 7x7 на маленьких экранах */
   .cell {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     font-size: 18px;
   }
   
-  .modal-content {
-    width: 95%;
-    margin: 5% auto;
+  /* Адаптация для 3x3 на маленьких экранах */
+  .grid-3x3 .cell {
+    width: 60px;
+    height: 60px;
+    font-size: 22px;
+  }
+  
+  .grid-3x3 .cell.empty {
+    font-size: 26px;
+  }
+  
+  .grid-3x3 .cell.under-construction {
+    font-size: 26px;
   }
 }
 
-/* Анимации */
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1);  }
-}
-
-.cell.building-active {
-  animation: pulse 2s infinite;
+@media (max-width: 400px) {
+  .grid-3x3 .cell {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  .grid-3x3 .cell.empty {
+    font-size: 24px;
+  }
+  
+  .grid-3x3 .cell.under-construction {
+    font-size: 24px;
+  }
 }
