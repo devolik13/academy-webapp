@@ -3,8 +3,8 @@ console.log('✅ script.js загружен');
 
 // Импортируем Firebase SDK (используем compat версии для простоты)
 // Эти скрипты должны быть подключены в index.html:
-// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+//  
+//  
 
 // Конфигурация Firebase
 const firebaseConfig = {
@@ -38,60 +38,59 @@ console.log('👤 User ID:', userId);
 let userData = null;
 let buildingsConfig = {}; // Будет заполнен данными о зданиях
 
-const BUILDING_EMOJIS = {
-  "library": "images/library.png",
-  "wizard_tower": "images/wizard_tower.png",
-  "blessing_tower": "images/blessing_tower.png",
-  "aom_generator": "images/aom_generator.png",
-  "pvp_arena": "images/pvp_arena.png",
-  "defense_tower": "images/defense_tower.png",
-  "arcane_lab": "images/arcane_lab.png",
-  "mana_collector": "images/mana_collector.png" // Коллектор маны (если будет)
-};
+// --- ФУНКЦИИ ДЛЯ РАБОТЫ С КОНФИГУРАЦИЕЙ ЗДАНИЙ ---
 
-// Функция для получения конфигурации зданий с сервера
-// Пока используем локальную копию, в будущем можно сделать API endpoint
+// Функция для получения конфигурации зданий
+// В реальной реализации лучше получать это с сервера
 function getBuildingsConfig() {
-  // Это упрощенная локальная копия BUILDINGS_DATA из buildings_config.py
-  // В реальной реализации лучше получать это с сервера
   return {
     "library": {
       "name": "Библиотека",
-      "emoji": "📚",
-      "description": "Центр исследований заклинаний."
+      "emoji": "images/library.png", // Путь к изображению
+      "description": "Центр исследований заклинаний.",
+      "can_build": false
     },
     "wizard_tower": {
       "name": "Башня магов",
-      "emoji": "🧙‍♂️",
-      "description": "Усиливает магов и позволяет нанимать новых."
-    },
+      "emoji": "images/wizard_tower.png",
+      "description": "Усиливает магов и позволяет нанимать новых.",
+      "can_build": false
+    }, 
     "blessing_tower": {
       "name": "Башня благословений",
-      "emoji": "🛐",
-      "description": "Открывает мощные временные благословения для магов."
+      "emoji": "images/blessing_tower.png",
+      "description": "Открывает мощные временные благословения для магов.",
+      "can_build": true
     },
     "aom_generator": {
       "name": "Генератор АОМ",
-      "emoji": "💎",
-      "description": "Производит кристаллы AOM - основную валюту."
+      "emoji": "images/aom_generator.png",
+      "description": "Производит кристаллы AOM - основную валюту.",
+      "can_build": true
     },
     "pvp_arena": {
       "name": "PvP Арена",
-      "emoji": "⚔️",
-      "description": "Проведение боев 1 на 1 по принципу autochess с рейтингом."
+      "emoji": "images/pvp_arena.png",
+      "description": "Проведение боев 1 на 1 по принципу autochess с рейтингом.",
+      "can_build": true
     },
     "defense_tower": {
       "name": "Башня защиты",
-      "emoji": "🛡️",
-      "description": "Защищает город, используя изученные заклинания."
+      "emoji": "images/defense_tower.png",
+      "description": "Защищает город, используя изученные заклинания.",
+      "can_build": true
     },
     "arcane_lab": {
       "name": "Арканская лаборатория",
-      "emoji": "⚗️",
-      "description": "Ускоряет процесс исследования заклинаний."
+      "emoji": "images/arcane_lab.png",
+      "description": "Ускоряет процесс исследования заклинаний.",
+      "can_build": true
     }
+    // "mana_collector" убран, так как его нет в BUILDINGS_DATA
   };
 }
+
+// --- ФУНКЦИИ ДЛЯ РАБОТЫ С FIREBASE ---
 
 // Функция для загрузки данных пользователя из Firebase
 async function loadUserData() {
@@ -102,7 +101,7 @@ async function loadUserData() {
     
     if (data) {
       userData = data;
-      buildingsConfig = getBuildingsConfig(); // Получаем конфигурацию зданий
+      buildingsConfig = getBuildingsConfig();
       console.log('✅ Данные пользователя загружены:', userData);
       updateUI();
     } else {
@@ -115,25 +114,9 @@ async function loadUserData() {
   }
 }
 
-// Функция для сохранения данных пользователя в Firebase
-async function saveUserData() {
-  try {
-    // Сохраняем только необходимые поля
-    const dataToSave = {
-      mana: userData.mana,
-      crystals: userData.crystals,
-      // В реальной реализации нужно сохранять только измененные данные
-    };
-    await database.ref(`users/${userId}`).update(dataToSave);
-    console.log('✅ Данные пользователя обновлены в Firebase');
-  } catch (error) {
-    console.error('❌ Ошибка сохранения данных:', error);
-    alert('❌ Ошибка сохранения данных');
-    throw error;
-  }
-}
+// --- ФУНКЦИИ ДЛЯ ОБНОВЛЕНИЯ ИНТЕРФЕЙСА ---
 
-// Отображение данных
+// Отображение данных пользователя
 function updateUI() {
   if (!userData) return;
 
@@ -145,8 +128,7 @@ function updateUI() {
   updateBuildingsGrid();
 }
 
-// Обновление сетки зданий
-
+// Обновление сетки зданий (3x3)
 function updateBuildingsGrid() {
   const grid = document.getElementById('city-grid');
   if (!grid) {
@@ -154,8 +136,12 @@ function updateBuildingsGrid() {
     return;
   }
   
+  // Устанавливаем класс для 3x3 сетки
+  grid.className = 'grid grid-3x3';
   grid.innerHTML = '';
-  const buildingsGrid = userData.buildings_grid || Array(9).fill(null); // 3x3 сетка
+  
+  // Используем 9 ячеек для 3x3 сетки
+  const buildingsGrid = userData.buildings_grid || Array(9).fill(null);
   
   for (let i = 0; i < 9; i++) {
     const cell = document.createElement('div');
@@ -167,48 +153,44 @@ function updateBuildingsGrid() {
     
     // Проверяем, строится ли что-то в этой ячейке
     const isUnderConstruction = construction.active && 
-                               construction.cell_index === i && 
+                               construction.cell_index != null && 
+                               parseInt(construction.cell_index) === i && 
                                construction.type === 'build';
 
     if (buildingId) {
-      // В ячейке есть здание
+      // В ячейке есть построенное здание
       cell.classList.add('built');
       
-      // Получаем информацию о здании из конфигурации
       const buildingConfig = buildingsConfig[buildingId];
       const buildingInfo = userData.buildings[buildingId];
       
       if (buildingConfig) {
+        // Создаем изображение
         const img = document.createElement('img');
-        img.src = buildingConfig.emoji; // Теперь это URL изображения
+        img.src = buildingConfig.emoji; // Теперь это путь к изображению
         img.alt = buildingConfig.name;
+        img.title = `${buildingConfig.name} (уровень ${buildingInfo?.level || 1})`;
         cell.appendChild(img);
-        cell.title = `${buildingConfig.name} (уровень ${buildingInfo?.level || 1})`;
         
-        // Добавляем класс по ID здания для стилизации
         cell.classList.add(`building-${buildingId}`);
       } else {
         cell.textContent = '🏛️';
         cell.title = `Здание (${buildingId})`;
       }
       
-      // Добавляем обработчик клика для здания
       cell.addEventListener('click', () => onBuildingClick(cell, buildingId, i));
     } else if (isUnderConstruction) {
       // В ячейке идет постройка
-      cell.classList.add('under-construction');
-      cell.textContent = '🔨'; // Значок молотка
+      cell.classList.add('under-construction', 'pulse');
+      cell.textContent = '🔨';
       cell.title = 'Идет постройка...';
       
-      // Можно добавить анимацию пульсации
-      cell.classList.add('pulse');
     } else {
       // Пустая ячейка
       cell.classList.add('empty');
       cell.textContent = '+';
       cell.title = 'Пустая ячейка. Кликните, чтобы построить.';
       
-      // Добавляем обработчик клика для пустой ячейки
       cell.addEventListener('click', () => onEmptyCellClick(cell, i));
     }
 
@@ -216,12 +198,12 @@ function updateBuildingsGrid() {
   }
 }
 
+// --- ОБРАБОТЧИКИ СОБЫТИЙ ---
 
 // Обработчик клика по зданию
 function onBuildingClick(cell, buildingId, cellIndex) {
   console.log(`🏢 Клик по зданию: ${buildingId} в ячейке ${cellIndex}`);
   
-  // Получаем информацию о здании
   const buildingConfig = buildingsConfig[buildingId];
   const buildingInfo = userData.buildings[buildingId];
   
@@ -230,24 +212,21 @@ function onBuildingClick(cell, buildingId, cellIndex) {
     return;
   }
   
-  // Формируем информацию для отображения
-  let infoText = `🏛️ **${buildingConfig.name}**\n`;
+  let infoText = `🏛️ ${buildingConfig.name}\n`;
   infoText += `📝 ${buildingConfig.description}\n`;
   infoText += `📊 Уровень: ${buildingInfo?.level || 1}\n\n`;
   
-  // Проверяем, можно ли улучшить здание
   const maxLevel = getBuildingMaxLevel(buildingId);
   const currentLevel = buildingInfo?.level || 1;
   
   if (currentLevel < maxLevel) {
     infoText += `⬆️ Можно улучшить до уровня ${currentLevel + 1}\n`;
-    infoText += `Команда в боте: \`/upgrade ${buildingId} ${currentLevel + 1}\``;
+    infoText += `Команда в боте: /upgrade ${buildingId} ${currentLevel + 1}`;
   } else {
     infoText += `✅ Здание на максимальном уровне (${maxLevel})`;
   }
   
-  // Показываем информацию во всплывающем окне или модальном окне
-  alert(infoText.replace(/\`/g, '')); // Убираем markdown для alert
+  alert(infoText);
 }
 
 // Обработчик клика по пустой ячейке
@@ -255,25 +234,78 @@ function onEmptyCellClick(cell, cellIndex) {
   console.log(`➕ Клик по пустой ячейке: ${cellIndex}`);
   
   // Формируем список доступных для постройки зданий
-  // Пока покажем простое сообщение
-  let buildText = `🏗️ **Постройка здания**\n`;
-  buildText += `Выберите здание для постройки в ячейке ${cellIndex}:\n\n`;
-  
-  // Добавляем несколько примеров зданий
-  buildText += `💎 \`/build aom_generator\` - Генератор АОМ\n`;
-  buildText += `⚔️ \`/build pvp_arena\` - PvP Арена\n`;
-  buildText += `🛡️ \`/build defense_tower\` - Башня защиты\n`;
-  buildText += `...\n\n`;
-  buildText += `Введите команду в Telegram боте для начала постройки.`;
-  
-  // Показываем информацию
-  alert(buildText.replace(/\`/g, '')); // Убираем markdown для alert
+  const buildableBuildings = Object.entries(buildingsConfig).filter(
+    ([id, data]) => data.can_build !== false
+  );
+
+  if (buildableBuildings.length === 0) {
+    alert("Нет доступных зданий для постройки.");
+    return;
+  }
+
+  let menuText = `🏗️ Построить в ячейке ${cellIndex}:\n`;
+  buildableBuildings.forEach(([id, data], index) => {
+    menuText += `${index + 1}. ${data.name}\n`;
+  });
+  menuText += `\nВведите номер здания (1-${buildableBuildings.length}):`;
+
+  const choice = prompt(menuText);
+
+  if (choice === null) return; // Отмена
+
+  const selectedIndex = parseInt(choice, 10) - 1;
+  if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= buildableBuildings.length) {
+    alert("Неверный выбор.");
+    return;
+  }
+
+  const [selectedBuildingId, selectedBuildingData] = buildableBuildings[selectedIndex];
+  console.log(`Пользователь выбрал постройку ${selectedBuildingId} в ячейке ${cellIndex}`);
+
+  // Отправка запроса на бэкенд
+  initiateBuild(selectedBuildingId, cellIndex);
 }
 
-// Вспомогательные функции
+// --- ФУНКЦИИ ДЛЯ ВЗАИМОДЕЙСТВИЯ С СЕРВЕРОМ ---
+
+// Функция для отправки запроса на постройку
+async function initiateBuild(buildingId, cellIndex) {
+  try {
+    // URL вашего API endpoint для постройки
+    // Убедитесь, что этот URL соответствует адресу, где запущен ваш main.py
+    const apiUrl = 'http://127.0.0.1:8000/api/build'; 
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        building_id: buildingId,
+        cell_index: cellIndex,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      alert(`✅ ${data.message}`);
+      // Перезагрузить данные пользователя, чтобы отразить изменения
+      await loadUserData();
+    } else {
+      alert(`❌ Ошибка: ${data.detail || 'Неизвестная ошибка'}`);
+    }
+  } catch (error) {
+    console.error('Ошибка при отправке запроса на постройку:', error);
+    alert('❌ Ошибка соединения. Попробуйте позже.');
+  }
+}
+
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+
 function getBuildingMaxLevel(buildingId) {
-  // Это упрощенная реализация
-  // В реальной системе нужно получать это из buildings_config
+  // В реальной системе нужно получать это из buildings_config.py
   const maxLevels = {
     "library": 1,
     "wizard_tower": 10,
@@ -285,6 +317,8 @@ function getBuildingMaxLevel(buildingId) {
   };
   return maxLevels[buildingId] || 1;
 }
+
+// --- ИНИЦИАЛИЗАЦИЯ ---
 
 // Загрузка и отображение данных при запуске
 document.addEventListener('DOMContentLoaded', function() {
