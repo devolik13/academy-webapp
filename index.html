@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Город мага</title>
-  <link rel="stylesheet" href="style.css" />
-  
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Город мага</title>
+    <!-- Подключение Firebase SDK через CDN -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+    <!-- Подключение вашего скрипта -->
+    <script defer src="script.js"></script>
+    <!-- Подключение стилей -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container">
-    <h1>🏰 Город мага</h1>
-    <p><strong>Фракция:</strong> <span id="faction">Загрузка...</span></p>
-    <p><strong>Мана:</strong> <span id="mana">0</span></p>
-    <p><strong>Кристаллы:</strong> <span id="crystals">0</span></p>
+    <div class="container">
+        <h1>🏰 Город мага</h1>
+        
+        <div class="info-panel">
+            <p><strong>Фракция:</strong> <span id="faction">Загрузка...</span></p>
+            <p><strong>Мана:</strong> <span id="mana">0</span></p>
+            <p><strong>Кристаллы:</strong> <span id="crystals">0</span></p>
+        </div>
 
-    <div class="grid" id="city-grid"></div>
-    <button id="build-btn" onclick="document.querySelector('.cell:not(.built)').click()">Построить Коллектор маны (50 кристаллов)</button>
-  </div>
-
-  <script src="script.js"></script>
+        <div id="city-grid" class="grid grid-3x3">
+            <!-- Ячейки будут созданы динамически скриптом -->
+        </div>
+    </div>
 </body>
 </html>
