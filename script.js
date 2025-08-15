@@ -3,8 +3,8 @@ console.log('✅ script.js загружен');
 
 // Импортируем Firebase SDK (используем compat версии для простоты)
 // Эти скрипты должны быть подключены в index.html:
-//  
-//  
+// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+// <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 // Конфигурация Firebase
 const firebaseConfig = {
@@ -38,7 +38,20 @@ console.log('👤 User ID:', userId);
 let userData = null;
 let buildingsConfig = {}; // Будет заполнен данными о зданиях
 
+// Эмодзи для зданий (можно расширить)
+const BUILDING_EMOJIS = {
+  "library": "📚",
+  "wizard_tower": "🧙‍♂️",
+  "blessing_tower": "🛐",
+  "aom_generator": "💎",
+  "pvp_arena": "⚔️",
+  "defense_tower": "🛡️",
+  "arcane_lab": "⚗️",
+  "mana_collector": "🔮" // Коллектор маны (если будет)
+};
+
 // Функция для получения конфигурации зданий с сервера
+// Пока используем локальную копию, в будущем можно сделать API endpoint
 function getBuildingsConfig() {
   // Это упрощенная локальная копия BUILDINGS_DATA из buildings_config.py
   // В реальной реализации лучше получать это с сервера
@@ -46,44 +59,37 @@ function getBuildingsConfig() {
     "library": {
       "name": "Библиотека",
       "emoji": "📚",
-      "description": "Центр исследований заклинаний.",
-      "can_build": false // Нельзя строить
+      "description": "Центр исследований заклинаний."
     },
     "wizard_tower": {
       "name": "Башня магов",
       "emoji": "🧙‍♂️",
-      "description": "Усиливает магов и позволяет нанимать новых.",
-      "can_build": false // Нельзя строить
-    }, 
+      "description": "Усиливает магов и позволяет нанимать новых."
+    },
     "blessing_tower": {
       "name": "Башня благословений",
       "emoji": "🛐",
-      "description": "Открывает мощные временные благословения для магов.",
-      "can_build": true
+      "description": "Открывает мощные временные благословения для магов."
     },
     "aom_generator": {
       "name": "Генератор АОМ",
       "emoji": "💎",
-      "description": "Производит кристаллы AOM - основную валюту.",
-      "can_build": true
+      "description": "Производит кристаллы AOM - основную валюту."
     },
     "pvp_arena": {
       "name": "PvP Арена",
       "emoji": "⚔️",
-      "description": "Проведение боев 1 на 1 по принципу autochess с рейтингом.",
-      "can_build": true
+      "description": "Проведение боев 1 на 1 по принципу autochess с рейтингом."
     },
     "defense_tower": {
       "name": "Башня защиты",
       "emoji": "🛡️",
-      "description": "Защищает город, используя изученные заклинания.",
-      "can_build": true
+      "description": "Защищает город, используя изученные заклинания."
     },
     "arcane_lab": {
       "name": "Арканская лаборатория",
       "emoji": "⚗️",
-      "description": "Ускоряет процесс исследования заклинаний.",
-      "can_build": true
+      "description": "Ускоряет процесс исследования заклинаний."
     }
   };
 }
@@ -140,7 +146,7 @@ function updateUI() {
   updateBuildingsGrid();
 }
 
-// Обновление сетки зданий (теперь 3x3)
+// Обновление сетки зданий
 function updateBuildingsGrid() {
   const grid = document.getElementById('city-grid');
   if (!grid) {
@@ -148,37 +154,16 @@ function updateBuildingsGrid() {
     return;
   }
   
-  // Изменяем класс сетки для 3x3
-  grid.className = 'grid grid-3x3';
   grid.innerHTML = '';
+  const buildingsGrid = userData.buildings_grid || Array(49).fill(null);
   
-  // Теперь 9 ячеек вместо 49 (для 3x3 сетки)
-  // Убедимся, что массив buildings_grid имеет правильный размер
-  let buildingsGrid = userData.buildings_grid || Array(9).fill(null);
-  
-  // Если в данных больше 9 элементов, обрезаем до 9
-  // Если меньше 9, дополним null-ами (на случай, если структура данных еще не обновлена)
-  if (buildingsGrid.length > 9) {
-    buildingsGrid = buildingsGrid.slice(0, 9);
-  } else if (buildingsGrid.length < 9) {
-    while (buildingsGrid.length < 9) {
-      buildingsGrid.push(null);
-    }
-  }
-  
-  for (let i = 0; i < 9; i++) { // Всегда 9 итераций для 3x3
+  for (let i = 0; i < 49; i++) {
     const cell = document.createElement('div');
     cell.className = 'cell';
     cell.dataset.index = i;
     
     const buildingId = buildingsGrid[i];
-    const construction = userData.construction || {};
     
-    // Проверяем, строится ли что-то в этой ячейке
-    const isUnderConstruction = construction.active && 
-                               construction.cell_index === i && 
-                               construction.type === 'build';
-
     if (buildingId) {
       // В ячейке есть здание
       cell.classList.add('built');
@@ -200,14 +185,6 @@ function updateBuildingsGrid() {
       
       // Добавляем обработчик клика для здания
       cell.addEventListener('click', () => onBuildingClick(cell, buildingId, i));
-    } else if (isUnderConstruction) {
-      // В ячейке идет постройка
-      cell.classList.add('under-construction');
-      cell.textContent = '🔨'; // Значок молотка
-      cell.title = 'Идет постройка...';
-      
-      // Можно добавить анимацию пульсации
-      cell.classList.add('pulse');
     } else {
       // Пустая ячейка
       cell.classList.add('empty');
@@ -221,7 +198,6 @@ function updateBuildingsGrid() {
     grid.appendChild(cell);
   }
 }
-
 
 // Обработчик клика по зданию
 function onBuildingClick(cell, buildingId, cellIndex) {
@@ -261,69 +237,19 @@ function onEmptyCellClick(cell, cellIndex) {
   console.log(`➕ Клик по пустой ячейке: ${cellIndex}`);
   
   // Формируем список доступных для постройки зданий
-  const buildableBuildings = Object.entries(buildingsConfig).filter(
-    ([id, data]) => data.can_build !== false
-  );
-
-  if (buildableBuildings.length === 0) {
-    alert("Нет доступных зданий для постройки.");
-    return;
-  }
-
-  let menuText = `🏗️ Построить в ячейке ${cellIndex}:\n`;
-  buildableBuildings.forEach(([id, data], index) => {
-    menuText += `${index + 1}. ${data.emoji} ${data.name}\n`;
-  });
-  menuText += `\nВведите номер здания (1-${buildableBuildings.length}):`;
-
-  const choice = prompt(menuText);
-
-  if (choice === null) return; // Отмена
-
-  const selectedIndex = parseInt(choice, 10) - 1;
-  if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= buildableBuildings.length) {
-    alert("Неверный выбор.");
-    return;
-  }
-
-  const [selectedBuildingId, selectedBuildingData] = buildableBuildings[selectedIndex];
-  console.log(`Пользователь выбрал постройку ${selectedBuildingId} в ячейке ${cellIndex}`);
-
-  // Отправка запроса на бэкенд
-  initiateBuild(selectedBuildingId, cellIndex);
-}
-
-// Функция для отправки запроса на постройку
-async function initiateBuild(buildingId, cellIndex) {
-  try {
-    // URL вашего API endpoint для постройки
-    const apiUrl = 'http://127.0.0.1:8000/api/build'; // Убедитесь, что это правильный URL
-    
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        building_id: buildingId,
-        cell_index: cellIndex,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (response.ok && data.success) {
-      alert(`✅ ${data.message}`); // Или обновить UI
-      // Перезагрузить данные пользователя, чтобы отразить изменения
-      await loadUserData();
-    } else {
-      alert(`❌ Ошибка: ${data.detail || 'Неизвестная ошибка'}`);
-    }
-  } catch (error) {
-    console.error('Ошибка при отправке запроса на постройку:', error);
-    alert('❌ Ошибка соединения. Попробуйте позже.');
-  }
+  // Пока покажем простое сообщение
+  let buildText = `🏗️ **Постройка здания**\n`;
+  buildText += `Выберите здание для постройки в ячейке ${cellIndex}:\n\n`;
+  
+  // Добавляем несколько примеров зданий
+  buildText += `💎 \`/build aom_generator\` - Генератор АОМ\n`;
+  buildText += `⚔️ \`/build pvp_arena\` - PvP Арена\n`;
+  buildText += `🛡️ \`/build defense_tower\` - Башня защиты\n`;
+  buildText += `...\n\n`;
+  buildText += `Введите команду в Telegram боте для начала постройки.`;
+  
+  // Показываем информацию
+  alert(buildText.replace(/\`/g, '')); // Убираем markdown для alert
 }
 
 // Вспомогательные функции
